@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>現代化聊天介面</title>
+    <style>
+        :root {
+            --user-gradient: linear-gradient(45deg, #e1a0e1, #b388b3);
+            --ai-bg: #2c2c2c;
+            --ai-border: #ffd700;
+            --text-light: #f0f0f0;
+            --text-dark: #333;
+            --container-bg: #ffffff;
+            --body-bg: #f0f2f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--body-bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            max-height: 900px;
+            background-color: var(--container-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #fff;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* 美化滾動條 */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .message .content {
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-gradient);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background-color: var(--ai-bg);
+            color: var(--text-light);
+            border: 1px solid var(--ai-border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.ai:hover .reaction-trigger {
+            opacity: 1;
+        }
+
+        /* 表情回應 */
+        .reaction-trigger {
+            position: absolute;
+            top: -10px;
+            right: 0px;
+            background: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 14px;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 4px;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .emoji-picker.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .emoji-picker span {
+            padding: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .emoji-picker span:hover {
+            background: #f0f0f0;
+        }
+
+        .emoji-reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .reaction {
+            background: #e0e0e0;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .reaction .count {
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
+        /* 正在輸入 */
+        .typing-indicator {
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #aaa;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        .chat-input-area {
+            border-top: 1px solid #e0e0e0;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            resize: none;
+            height: 24px; /* 初始高度 */
+            max-height: 100px; /* 最大高度 */
+            overflow-y: auto;
+            transition: height 0.2s;
+        }
+
+        #message-input:focus {
+            outline: none;
+            border-color: #a0a0a0;
+        }
+
+        #send-button {
+            border: none;
+            background: var(--user-gradient);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        #send-button:hover {
+            transform: scale(1.1);
+        }
+
+        #send-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* 行動裝置響應式設計 */
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            .chat-container {
+                height: 100vh;
+                max-height: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .chat-messages {
+                padding: 1rem;
+            }
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            AI 助理
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- 訊息會動態加到這裡 -->
+            <div class="message ai">
+                <div class="content">你好！有什麼可以幫助你的嗎？</div>
+                <div class="emoji-reactions"></div>
+            </div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator" style="display: none;">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="message-input" placeholder="輸入訊息..." rows="1"></textarea>
+            <button id="send-button" aria-label="發送訊息">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const typingIndicator = document.getElementById('typing-indicator');
+
+            // 自動調整 textarea 高度
+            messageInput.addEventListener('input', () => {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = (messageInput.scrollHeight) + 'px';
+            });
+
+            // 處理訊息發送
+            const sendMessage = () => {
+                const text = messageInput.value.trim();
+                if (text === '') return;
+
+                addMessage(text, 'user');
+                messageInput.value = '';
+                messageInput.style.height = 'auto'; // 重置高度
+
+                showTypingIndicator();
+
+                // 模擬 AI 回應
+                setTimeout(() => {
+                    const aiResponse = generateAiResponse(text);
+                    addMessage(aiResponse, 'ai');
+                    hideTypingIndicator();
+                }, Math.random() * 1500 + 500); // 模擬 0.5 到 2 秒的延遲
+            };
+
+            // 監聽發送事件
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // 新增訊息到畫面上
+            const addMessage = (text, sender) => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', sender);
+
+                const contentElement = document.createElement('div');
+                contentElement.classList.add('content');
+                contentElement.textContent = text;
+                messageElement.appendChild(contentElement);
+
+                if (sender === 'ai') {
+                    addReactionFeature(messageElement);
+                }
+
+                chatMessages.appendChild(messageElement);
+                scrollToBottom();
+            };
+
+            // 為 AI 訊息添加表情回應功能
+            const addReactionFeature = (messageElement) => {
+                const reactionsContainer = document.createElement('div');
+                reactionsContainer.classList.add('emoji-reactions');
+
+                const reactionTrigger = document.createElement('div');
+                reactionTrigger.classList.add('reaction-trigger');
+                reactionTrigger.textContent = '😊';
+
+                const emojiPicker = document.createElement('div');
+                emojiPicker.classList.add('emoji-picker');
+                const emojis = ['👍', '❤️', '😂', '😮', '😢'];
+                emojis.forEach(emoji => {
+                    const emojiSpan = document.createElement('span');
+                    emojiSpan.textContent = emoji;
+                    emojiSpan.addEventListener('click', () => {
+                        addOrUpdateReaction(reactionsContainer, emoji);
+                        emojiPicker.classList.remove('active');
+                    });
+                    emojiPicker.appendChild(emojiSpan);
+                });
+
+                reactionTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.emoji-picker').forEach(p => p.classList.remove('active'));
+                    emojiPicker.classList.toggle('active');
+                });
+
+                messageElement.appendChild(reactionTrigger);
+                messageElement.appendChild(emojiPicker);
+                messageElement.appendChild(reactionsContainer);
+            };
+
+            const addOrUpdateReaction = (container, emoji) => {
+                let existingReaction = null;
+                // 尋找已存在的表情
+                for (let child of container.children) {
+                    if (child.textContent.startsWith(emoji)) {
+                        existingReaction = child;
+                        break;
+                    }
+                }
+
+                if (existingReaction) {
+                    const countElement = existingReaction.querySelector('.count');
+                    let currentCount = parseInt(countElement.textContent, 10);
+                    countElement.textContent = currentCount + 1;
+                } else {
+                    const newReaction = document.createElement('div');
+                    newReaction.classList.add('reaction');
+                    newReaction.innerHTML = `${emoji} <span class="count">1</span>`;
+                    container.appendChild(newReaction);
+                }
+            };
+
+            // 點擊頁面其他地方關閉表情選擇器
+            document.addEventListener('click', () => {
+                 document.querySelectorAll('.emoji-picker').forEach(p => p.classList.remove('active'));
+            });
+
+
+            // 顯示/隱藏 "正在輸入"
+            const showTypingIndicator = () => {
+                typingIndicator.style.display = 'flex';
+                scrollToBottom();
+            };
+            const hideTypingIndicator = () => {
+                typingIndicator.style.display = 'none';
+            };
+
+            // 自動滾動到底部
+            const scrollToBottom = () => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            // 簡單的 AI 回應生成器
+            const generateAiResponse = (inputText) => {
+                const lowerInput = inputText.toLowerCase();
+                if (lowerInput.includes('你好') || lowerInput.includes('hello')) {
+                    return '你好！很高興能為您服務。';
+                } else if (lowerInput.includes('天氣')) {
+                    return '今天的天氣很棒，陽光明媚！';
+                } else if (lowerInput.includes('謝謝')) {
+                    return '不客氣！隨時為您效勞。';
+                } else {
+                    return `關於「${inputText}」，這是一個有趣的問題。讓我想想...`;
+                }
+            };
+
+            // 初始滾動到底部
+            scrollToBottom();
+        });
+    </script>
+</body>
+</html>
