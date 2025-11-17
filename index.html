@@ -10,23 +10,20 @@
 
     <div id="api-key-section">
         <h1>Gemini API 金鑰設定</h1>
-        <p>請輸入您的 Gemini API 金鑰以開始使用。</p>
-        <div class="input-group">
-            <input type="password" id="api-key-input" placeholder="在此輸入您的 API 金鑰">
-            <button id="save-key-btn">儲存</button>
-        </div>
+        <p>請輸入您的 Gemini API 金鑰：</p>
+        <input type="password" id="api-key-input" placeholder="在此輸入您的 API 金鑰">
+        <button id="save-key-button">儲存</button>
     </div>
 
     <div id="chat-section" class="hidden">
-        <div class="chat-history-container">
-            <div id="chat-history"></div>
-        </div>
-        <div class="chat-input-container">
-            <textarea id="message-input" placeholder="輸入訊息..." rows="1"></textarea>
-            <button id="send-btn">傳送</button>
+        <div id="chat-container"></div>
+        <div id="input-container">
+            <textarea id="message-input" placeholder="在這裡輸入您的訊息..."></textarea>
+            <button id="send-button">傳送</button>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai/dist/index.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
