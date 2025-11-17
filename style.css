@@ -1,0 +1,22 @@
+body {
+    font-family: sans-serif;
+}
+
+#chat-history {
+    height: 300px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    overflow-y: scroll;
+}
+
+#recommended-questions {
+    margin-top: 10px;
+}
+
+#recommended-questions button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+}
